@@ -140,6 +140,7 @@
     <Compile Include="Controls\Helper\ButtonHelper.cs" />
     <Compile Include="Controls\ClosingWindowEventHandlerArgs.cs" />
     <Compile Include="Controls\Helper\ComboBoxHelper.cs" />
+    <Compile Include="Controls\Helper\ContextMenuHelper.cs" />
     <Compile Include="Controls\Helper\ControlsHelper.cs" />
     <Compile Include="Controls\CustomValidationPopup.cs" />
     <Compile Include="Controls\DataGridNumericUpDownColumn.cs" />

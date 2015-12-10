@@ -121,6 +121,7 @@
     <Compile Include="Controls\Dialogs\MessageDialog.cs" />
     <Compile Include="Controls\Helper\ButtonHelper.cs" />
     <Compile Include="Controls\Helper\ComboBoxHelper.cs" />
+    <Compile Include="Controls\Helper\ContextMenuHelper.cs" />
     <Compile Include="Controls\Helper\ControlsHelper.cs" />
     <Compile Include="Controls\Helper\DataGridCellHelper.cs" />
     <Compile Include="Controls\Helper\DataGridRowHelper.cs" />
