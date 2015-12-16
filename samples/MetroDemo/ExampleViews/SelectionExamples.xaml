@@ -153,6 +153,8 @@
                           Style="{DynamicResource VirtualisedMetroComboBox}"
                           Controls:TextBoxHelper.Watermark="Autocompletion"
                           Controls:TextBoxHelper.UseFloatingWatermark="True"
+                          Controls:ContextMenuHelper.IsContextMenuBound="True"
+                          Controls:ContextMenuHelper.IsContextMenuVisible="False"
                           DisplayMemberPath="Title"
                           IsEditable="True"
                           ItemsSource="{Binding Albums}"
