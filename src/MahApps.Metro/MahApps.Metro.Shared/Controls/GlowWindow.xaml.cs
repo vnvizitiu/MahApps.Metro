@@ -270,12 +270,14 @@ namespace MahApps.Metro.Controls
 
         internal void UpdateCore(Native.RECT rect)
         {
+            // we can handle this._owner.WindowState == WindowState.Normal
+            // or use NOZORDER too
             NativeMethods.SetWindowPos(this.handle, this.ownerHandle,
                                        (int)(this.getLeft(rect)),
                                        (int)(this.getTop(rect)),
                                        (int)(this.getWidth(rect)),
                                        (int)(this.getHeight(rect)),
-                                       SWP.NOACTIVATE);
+                                       SWP.NOACTIVATE | SWP.NOZORDER);
         }
 
         private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
@@ -299,8 +301,11 @@ namespace MahApps.Metro.Controls
                 case WM.LBUTTONDOWN:
                     if (this.ownerHandle != IntPtr.Zero && UnsafeNativeMethods.GetWindowRect(this.ownerHandle, out rect))
                     {
-                        var pt = this.GetRelativeMousePosition();
-                        NativeMethods.PostMessage(this.ownerHandle, (uint)WM.NCLBUTTONDOWN, (IntPtr)this.getHitTestValue(pt, rect), IntPtr.Zero);
+                        Point pt;
+                        if (WinApiHelper.TryGetRelativeMousePosition(this.handle, out pt))
+                        {
+                            NativeMethods.PostMessage(this.ownerHandle, (uint)WM.NCLBUTTONDOWN, (IntPtr)this.getHitTestValue(pt, rect), IntPtr.Zero);
+                        }
                     }
                     break;
                 case WM.NCHITTEST:
@@ -313,8 +318,11 @@ namespace MahApps.Metro.Controls
                     {
                         if (this.ownerHandle != IntPtr.Zero && UnsafeNativeMethods.GetWindowRect(this.ownerHandle, out rect))
                         {
-                            var pt = this.GetRelativeMousePosition();
-                            cursor = this.getCursor(pt, rect);
+                            Point pt;
+                            if (WinApiHelper.TryGetRelativeMousePosition(this.handle, out pt))
+                            {
+                                cursor = this.getCursor(pt, rect);
+                            }
                         }
                     }
                     if (cursor != null && cursor != this.Cursor)
@@ -324,17 +332,6 @@ namespace MahApps.Metro.Controls
                     break;
             }
             return IntPtr.Zero;
-        }
-
-        private Point GetRelativeMousePosition()
-        {
-            if (this.handle == IntPtr.Zero)
-            {
-                return new Point();
-            }
-            var point = Standard.NativeMethods.GetCursorPos();
-            Standard.NativeMethods.ScreenToClient(this.handle, ref point);
-            return new Point(point.x, point.y);
         }
     }
 }

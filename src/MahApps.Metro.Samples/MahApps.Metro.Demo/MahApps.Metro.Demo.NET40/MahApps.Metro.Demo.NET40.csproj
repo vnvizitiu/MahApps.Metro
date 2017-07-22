@@ -41,6 +41,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Data" />
     <Reference Include="System.Windows.Interactivity, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -141,6 +142,9 @@
   <Target Name="AfterBuild">
   </Target>
   -->
+  <Target AfterTargets="AfterBuild;NonWinFodyTarget" Name="CleanReferenceCopyLocalPaths" Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <Delete Files="@(ReferenceCopyLocalPaths-&gt;'$(OutDir)%(DestinationSubDirectory)%(Filename)%(Extension)')" />
+  </Target>
   <Import Project="..\..\..\.paket\paket.targets" />
   <Choose>
     <When Condition="$(TargetFrameworkIdentifier) == '.NETFramework' And ($(TargetFrameworkVersion) == 'v4.0' Or $(TargetFrameworkVersion) == 'v4.5' Or $(TargetFrameworkVersion) == 'v4.5.1' Or $(TargetFrameworkVersion) == 'v4.5.2' Or $(TargetFrameworkVersion) == 'v4.5.3' Or $(TargetFrameworkVersion) == 'v4.6' Or $(TargetFrameworkVersion) == 'v4.6.1' Or $(TargetFrameworkVersion) == 'v4.6.2' Or $(TargetFrameworkVersion) == 'v4.6.3')">
@@ -209,8 +213,8 @@
         <Reference Include="System.Net">
           <Paket>True</Paket>
         </Reference>
-        <Reference Include="Microsoft.Threading.Tasks.Extensions.Desktop">
-          <HintPath>..\..\..\packages\Microsoft.Bcl.Async\lib\net40\Microsoft.Threading.Tasks.Extensions.Desktop.dll</HintPath>
+        <Reference Include="Microsoft.Threading.Tasks">
+          <HintPath>..\..\..\packages\Microsoft.Bcl.Async\lib\net40\Microsoft.Threading.Tasks.dll</HintPath>
           <Private>True</Private>
           <Paket>True</Paket>
         </Reference>
@@ -219,8 +223,8 @@
           <Private>True</Private>
           <Paket>True</Paket>
         </Reference>
-        <Reference Include="Microsoft.Threading.Tasks">
-          <HintPath>..\..\..\packages\Microsoft.Bcl.Async\lib\net40\Microsoft.Threading.Tasks.dll</HintPath>
+        <Reference Include="Microsoft.Threading.Tasks.Extensions.Desktop">
+          <HintPath>..\..\..\packages\Microsoft.Bcl.Async\lib\net40\Microsoft.Threading.Tasks.Extensions.Desktop.dll</HintPath>
           <Private>True</Private>
           <Paket>True</Paket>
         </Reference>

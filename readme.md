@@ -11,12 +11,12 @@ A toolkit for creating metro-style WPF applications. Lots of goodness out-of-the
 [![NuGetPre](https://img.shields.io/nuget/vpre/MahApps.Metro.svg?style=flat-square)](https://www.nuget.org/packages/MahApps.Metro/)
 [![Issues](https://img.shields.io/github/issues/MahApps/MahApps.Metro.svg?style=flat-square)](https://github.com/MahApps/MahApps.Metro/issues)
 
-[![TeamCity](https://img.shields.io/teamcity/http/builds.brendanforster.com/s/MahApps_MahAppsMetroDevelopAlpha.svg?style=flat-square&&label=TeamCity%20dev)]()
-[![TeamCity](https://img.shields.io/teamcity/http/builds.brendanforster.com/s/MahApps_MahAppsMetroPullRequests.svg?style=flat-square&&label=TeamCity%20PRs)]()
+[![TeamCity](https://img.shields.io/teamcity/http/builds.brendanforster.com/s/MahApps_MahAppsMetroDevelopAlpha.svg?style=flat-square&&label=TeamCity%20dev)](http://builds.brendanforster.com/viewType.html?buildTypeId=MahApps_MahAppsMetroDevelopAlpha)
+[![TeamCity](https://img.shields.io/teamcity/http/builds.brendanforster.com/s/MahApps_MahAppsMetroPullRequests.svg?style=flat-square&&label=TeamCity%20PRs)](http://builds.brendanforster.com/viewType.html?buildTypeId=MahApps_MahAppsMetroPullRequests)
 
 ## Want to say thanks?
 
-Hit the :star: Star :star: button, thx :squirrel:
+This framework is free and can be used for free, open source and commercial applications. It's tested and contributed by many people... So mainly hit the :star: button, that's all... thx :squirrel: (:dollar:, :euro:, :beer: or some other gifts are also being accepted...).
 
 ## Documentation
 
@@ -24,6 +24,8 @@ You can read the documentation on the web site: [http://mahapps.com](http://maha
 You can also help keep the documentation up to date by submitting a pull request on the  [mahapps.github.com](https://github.com/MahApps/mahapps.github.com) repository. If you're unfamiliar with GitHub Pages, the help guides [here](https://help.github.com/pages/) are a good place to start.
 
 ![maindemowindow01](./docs/main_demo_window.png)
+
+![maindemowindow04](./docs/mahapps_main.gif)
 
 ![maindemowindow02](./docs/main_demo_text.png)
 
@@ -35,8 +37,8 @@ You can also help keep the documentation up to date by submitting a pull request
 
 ## Release Notes
 
+- [v1.4.0](./docs/release-notes/1.4.0.md)
 - [v1.3.0](./docs/release-notes/1.3.0.md)
-- [v1.2.4](./docs/release-notes/1.2.4.md)
 - all [other](./docs/release-notes/)
 
 ## Icons

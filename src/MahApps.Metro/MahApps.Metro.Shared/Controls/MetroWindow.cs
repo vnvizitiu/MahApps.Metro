@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -46,6 +47,7 @@ namespace MahApps.Metro.Controls
         private const string PART_MetroActiveDialogContainer = "PART_MetroActiveDialogContainer";
         private const string PART_MetroInactiveDialogsContainer = "PART_MetroInactiveDialogsContainer";
         private const string PART_FlyoutModal = "PART_FlyoutModal";
+        private const string PART_Content = "PART_Content";
 
         public static readonly DependencyProperty ShowIconOnTitleBarProperty = DependencyProperty.Register("ShowIconOnTitleBar", typeof(bool), typeof(MetroWindow), new PropertyMetadata(true, OnShowIconOnTitleBarPropertyChangedCallback));
         public static readonly DependencyProperty IconEdgeModeProperty = DependencyProperty.Register("IconEdgeMode", typeof(EdgeMode), typeof(MetroWindow), new PropertyMetadata(EdgeMode.Aliased));
@@ -141,6 +143,14 @@ namespace MahApps.Metro.Controls
             remove { RemoveHandler(FlyoutsStatusChangedEvent, value); }
         }
 
+        public static readonly RoutedEvent WindowTransitionCompletedEvent = EventManager.RegisterRoutedEvent("WindowTransitionCompleted", RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(MetroWindow));
+
+        public event RoutedEventHandler WindowTransitionCompleted
+        {
+            add { this.AddHandler(WindowTransitionCompletedEvent, value); }
+            remove { this.RemoveHandler(WindowTransitionCompletedEvent, value); }
+        }
+
         /// <summary>
         /// Allows easy handling of window commands brush. Theme is also applied based on this brush.
         /// </summary>
@@ -174,9 +184,9 @@ namespace MahApps.Metro.Controls
 
         private void UseDropShadow()
         {
-            this.BorderThickness = new Thickness(0);
-            this.BorderBrush = null;
-            this.GlowBrush = Brushes.Black;
+            this.SetCurrentValue(BorderThicknessProperty, new Thickness(0));
+            this.SetCurrentValue(BorderBrushProperty, null);
+            this.SetCurrentValue(GlowBrushProperty, Brushes.Black);
         }
 
         public bool IsWindowDraggable
@@ -444,16 +454,20 @@ namespace MahApps.Metro.Controls
                 // if UseNoneWindowStyle = true no title bar should be shown
                 var useNoneWindowStyle = (bool)e.NewValue;
                 var window = (MetroWindow)d;
-                window.ToggleNoneWindowStyle(useNoneWindowStyle);
+                window.ToggleNoneWindowStyle(useNoneWindowStyle, window.ShowTitleBar);
             }
         }
 
-        private void ToggleNoneWindowStyle(bool useNoneWindowStyle)
+        private void ToggleNoneWindowStyle(bool useNoneWindowStyle, bool isTitleBarVisible)
         {
             // UseNoneWindowStyle means no title bar, window commands or min, max, close buttons
             if (useNoneWindowStyle)
             {
-                ShowTitleBar = false;
+                this.SetCurrentValue(ShowTitleBarProperty, false);
+            }
+            else
+            {
+                this.SetCurrentValue(ShowTitleBarProperty, isTitleBarVisible);
             }
             if (LeftWindowCommandsPresenter != null)
             {
@@ -848,23 +862,35 @@ namespace MahApps.Metro.Controls
 #if NET4_5
         protected override async void OnClosing(CancelEventArgs e)
         {
-            // #2409: don't close window if there is a dialog still open
-            var dialog = await this.GetCurrentDialogAsync<BaseMetroDialog>();
-            e.Cancel = dialog != null;
+            // Don't overwrite cancellation for close
+            if (e.Cancel == false)
+            {
+                // #2409: don't close window if there is a dialog still open
+                var dialog = await this.GetCurrentDialogAsync<BaseMetroDialog>();
+                e.Cancel = dialog != null;
+            }
+
             base.OnClosing(e);
         }
 #else
         protected override void OnClosing(CancelEventArgs e)
         {
-            // #2409: don't close window if there is a dialog still open
-            var dialog = this.Invoke(() => this.metroActiveDialogContainer?.Children.OfType<BaseMetroDialog>().LastOrDefault());
-            e.Cancel = dialog != null;
+            // Don't overwrite cancellation for close
+            if (e.Cancel == false)
+            {
+                // #2409: don't close window if there is a dialog still open
+                var dialog = this.Invoke(() => this.metroActiveDialogContainer?.Children.OfType<BaseMetroDialog>().LastOrDefault());
+                e.Cancel = dialog != null;
+            }
+
             base.OnClosing(e);
         }
 #endif
 
         private void MetroWindow_DataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
+            // MahApps add these controls to the window with AddLogicalChild method.
+            // This has the side effect that the DataContext doesn't update, so do this now here.
             if (this.LeftWindowCommands != null) this.LeftWindowCommands.DataContext = this.DataContext;
             if (this.RightWindowCommands != null) this.RightWindowCommands.DataContext = this.DataContext;
             if (this.WindowButtonCommands != null) this.WindowButtonCommands.DataContext = this.DataContext;
@@ -883,7 +909,7 @@ namespace MahApps.Metro.Controls
                 VisualStateManager.GoToState(this, "AfterLoaded", true);
             }
 
-            this.ToggleNoneWindowStyle(this.UseNoneWindowStyle);
+            this.ToggleNoneWindowStyle(this.UseNoneWindowStyle, this.ShowTitleBar);
 
             if (this.Flyouts == null)
             {
@@ -979,7 +1005,6 @@ namespace MahApps.Metro.Controls
                 foreach (var flyout in Flyouts.GetFlyouts().Where(x => x.IsOpen && x.ExternalCloseButton == e.ChangedButton && (!x.IsPinned || Flyouts.OverrideIsPinned)))
                 {
                     flyout.IsOpen = false;
-                    e.Handled = true;
                 }
             }
             else if (Flyouts.OverrideExternalCloseButton == e.ChangedButton)
@@ -987,7 +1012,6 @@ namespace MahApps.Metro.Controls
                 foreach (var flyout in Flyouts.GetFlyouts().Where(x => x.IsOpen && (!x.IsPinned || Flyouts.OverrideIsPinned)))
                 {
                     flyout.IsOpen = false;
-                    e.Handled = true;
                 }
             }
         }
@@ -1009,6 +1033,46 @@ namespace MahApps.Metro.Controls
             if (newChild != null)
             {
                 window.AddLogicalChild(newChild);
+                // Yes, that's crazy. But we must do this to enable all possible scenarios for setting DataContext
+                // in a Window. Without set the DataContext at this point it can happen that e.g. a Flyout
+                // doesn't get the same DataContext.
+                // So now we can type
+                //
+                // this.InitializeComponent();
+                // this.DataContext = new MainViewModel();
+                //
+                // or
+                //
+                // this.DataContext = new MainViewModel();
+                // this.InitializeComponent();
+                //
+                newChild.DataContext = window.DataContext;
+            }
+        }
+
+        protected override IEnumerator LogicalChildren
+        {
+            get
+            {
+                // cheat, make a list with all logical content and return the enumerator
+                ArrayList children = new ArrayList { this.Content };
+                if (this.LeftWindowCommands != null)
+                {
+                    children.Add(this.LeftWindowCommands);
+                }
+                if (this.RightWindowCommands != null)
+                {
+                    children.Add(this.RightWindowCommands);
+                }
+                if (this.WindowButtonCommands != null)
+                {
+                    children.Add(this.WindowButtonCommands);
+                }
+                if (this.Flyouts != null)
+                {
+                    children.Add(this.Flyouts);
+                }
+                return children.GetEnumerator();
             }
         }
 
@@ -1050,6 +1114,12 @@ namespace MahApps.Metro.Controls
             this.flyoutModalDragMoveThumb = GetTemplateChild(PART_FlyoutModalDragMoveThumb) as Thumb;
 
             this.SetVisibiltyForAllTitleElements(this.TitlebarHeight > 0);
+
+            var metroContentControl = GetTemplateChild(PART_Content) as MetroContentControl;
+            if (metroContentControl != null)
+            {
+                metroContentControl.TransitionCompleted += (sender, args) => this.RaiseEvent(new RoutedEventArgs(WindowTransitionCompletedEvent));
+            }
         }
 
         protected IntPtr CriticalHandle
@@ -1201,7 +1271,7 @@ namespace MahApps.Metro.Controls
             // tage from DragMove internal code
             window.VerifyAccess();
 
-            var cursorPos = Standard.NativeMethods.GetCursorPos();
+            //var cursorPos = WinApiHelper.GetPhysicalCursorPos();
 
             // if the window is maximized dragging is only allowed on title bar (also if not visible)
             var windowIsMaximized = window.WindowState == WindowState.Maximized;
@@ -1216,7 +1286,7 @@ namespace MahApps.Metro.Controls
 
             if (windowIsMaximized)
             {
-                var cursorXPos = cursorPos.x;
+                //var cursorXPos = cursorPos.x;
                 EventHandler windowOnStateChanged = null;
                 windowOnStateChanged = (sender, args) =>
                     {
@@ -1251,13 +1321,13 @@ namespace MahApps.Metro.Controls
                 var isMouseOnTitlebar = mousePos.Y <= window.TitlebarHeight && window.TitlebarHeight > 0;
                 if (canResize && isMouseOnTitlebar)
                 {
-                    if (window.WindowState == WindowState.Maximized)
+                    if (window.WindowState == WindowState.Normal)
                     {
-                        Microsoft.Windows.Shell.SystemCommands.RestoreWindow(window);
+                        Microsoft.Windows.Shell.SystemCommands.MaximizeWindow(window);
                     }
                     else
                     {
-                        Microsoft.Windows.Shell.SystemCommands.MaximizeWindow(window);
+                        Microsoft.Windows.Shell.SystemCommands.RestoreWindow(window);
                     }
                     mouseButtonEventArgs.Handled = true;
                 }
@@ -1312,49 +1382,29 @@ namespace MahApps.Metro.Controls
                 UnsafeNativeMethods.PostMessage(hwnd, Constants.SYSCOMMAND, new IntPtr(cmd), IntPtr.Zero);
         }
 
-        internal void HandleFlyoutStatusChange(Flyout flyout, IEnumerable<Flyout> visibleFlyouts)
+        internal void HandleFlyoutStatusChange(Flyout flyout, IList<Flyout> visibleFlyouts)
         {
             //checks a recently opened flyout's position.
-            if (flyout.Position == Position.Left || flyout.Position == Position.Right || flyout.Position == Position.Top)
+            //if (flyout.Position == Position.Left || flyout.Position == Position.Right || flyout.Position == Position.Top)
             {
                 //get it's zindex
                 var zIndex = flyout.IsOpen ? Panel.GetZIndex(flyout) + 3 : visibleFlyouts.Count() + 2;
 
                 // Note: ShowWindowCommandsOnTop is here for backwards compatibility reasons
                 //if the the corresponding behavior has the right flag, set the window commands' and icon zIndex to a number that is higher than the flyout's.
-                if (icon != null)
-                {
-                    icon.SetValue(Panel.ZIndexProperty,
-                        this.IconOverlayBehavior.HasFlag(WindowCommandsOverlayBehavior.Flyouts) ? zIndex : 1);
-                }
-
-                if (LeftWindowCommandsPresenter != null)
-                {
-                    LeftWindowCommandsPresenter.SetValue(Panel.ZIndexProperty,
-                        this.LeftWindowCommandsOverlayBehavior.HasFlag(WindowCommandsOverlayBehavior.Flyouts) ? zIndex : 1);
-                }
-
-                if (RightWindowCommandsPresenter != null)
-                {
-                    RightWindowCommandsPresenter.SetValue(Panel.ZIndexProperty,
-                        this.RightWindowCommandsOverlayBehavior.HasFlag(WindowCommandsOverlayBehavior.Flyouts) ? zIndex : 1);
-                }
-
-                if (WindowButtonCommandsPresenter != null)
-                {
-                    WindowButtonCommandsPresenter.SetValue(Panel.ZIndexProperty,
-                        this.WindowButtonCommandsOverlayBehavior.HasFlag(WindowCommandsOverlayBehavior.Flyouts) ? zIndex : 1);
-                }
-
+                this.icon?.SetValue(Panel.ZIndexProperty, flyout.IsModal && flyout.IsOpen ? 0 : (this.IconOverlayBehavior.HasFlag(WindowCommandsOverlayBehavior.Flyouts) ? zIndex : 1));
+                this.LeftWindowCommandsPresenter?.SetValue(Panel.ZIndexProperty, flyout.IsModal && flyout.IsOpen ? 0 : (this.LeftWindowCommandsOverlayBehavior.HasFlag(WindowCommandsOverlayBehavior.Flyouts) ? zIndex : 1));
+                this.RightWindowCommandsPresenter?.SetValue(Panel.ZIndexProperty, flyout.IsModal && flyout.IsOpen ? 0 : (this.RightWindowCommandsOverlayBehavior.HasFlag(WindowCommandsOverlayBehavior.Flyouts) ? zIndex : 1));
+                this.WindowButtonCommandsPresenter?.SetValue(Panel.ZIndexProperty, flyout.IsModal && flyout.IsOpen ? 0 : (this.WindowButtonCommandsOverlayBehavior.HasFlag(WindowCommandsOverlayBehavior.Flyouts) ? zIndex : 1));
                 this.HandleWindowCommandsForFlyouts(visibleFlyouts);
             }
 
-            flyoutModal.Visibility = visibleFlyouts.Any(x => x.IsModal) ? Visibility.Visible : Visibility.Hidden;
-
-            RaiseEvent(new FlyoutStatusChangedRoutedEventArgs(FlyoutsStatusChangedEvent, this)
+            if (this.flyoutModal != null)
             {
-                ChangedFlyout = flyout
-            });
+                this.flyoutModal.Visibility = visibleFlyouts.Any(x => x.IsModal) ? Visibility.Visible : Visibility.Hidden;
+            }
+
+            RaiseEvent(new FlyoutStatusChangedRoutedEventArgs(FlyoutsStatusChangedEvent, this) { ChangedFlyout = flyout });
         }
 
         public class FlyoutStatusChangedRoutedEventArgs : RoutedEventArgs

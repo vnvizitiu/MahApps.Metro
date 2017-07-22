@@ -11,8 +11,8 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <ScrollViewer x:Name="PART_MessageScrollViewer"
-                      Focusable="False"
                       FocusVisualStyle="{x:Null}"
+                      Focusable="False"
                       HorizontalScrollBarVisibility="Disabled"
                       VerticalScrollBarVisibility="Auto">
             <TextBlock x:Name="PART_MessageTextBlock"
@@ -31,8 +31,7 @@
                     Height="35"
                     MinWidth="80"
                     Margin="0 0 5 0"
-                    Content="{Binding AffirmativeButtonText, RelativeSource={RelativeSource AncestorType=Dialogs:MessageDialog, Mode=FindAncestor}, UpdateSourceTrigger=PropertyChanged}"
-                    Style="{DynamicResource AccentedDialogSquareButton}" />
+                    Content="{Binding AffirmativeButtonText, RelativeSource={RelativeSource AncestorType=Dialogs:MessageDialog, Mode=FindAncestor}, UpdateSourceTrigger=PropertyChanged}" />
             <Button x:Name="PART_NegativeButton"
                     Height="35"
                     MinWidth="80"
